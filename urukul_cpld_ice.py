@@ -132,23 +132,23 @@ _io = [
     ),
     # yosys/nextpnr get confused if these are not broken up
     # EEM 0
-    ("eem", 0, Subsignal("p", Pins("J5")), Subsignal("n", Pins("G1"))),  # SCLK
-    ("eem", 1, Subsignal("p", Pins("K4")), Subsignal("n", Pins("M1"))),  # MOSI
-    ("eem", 2, Subsignal("p", Pins("K1")), Subsignal("n", Pins("K3"))),  # MISO/NU_CLK
-    ("eem", 3, Subsignal("p", Pins("J4")), Subsignal("n", Pins("H2"))),  # CS0
-    ("eem", 4, Subsignal("p", Pins("H4")), Subsignal("n", Pins("G2"))),  # CS1
-    ("eem", 5, Subsignal("p", Pins("G4")), Subsignal("n", Pins("E3"))),  # CS2/NU_CS
-    ("eem", 6, Subsignal("p", Pins("F4")), Subsignal("n", Pins("D2"))),  # IO_UPDATE
-    ("eem", 7, Subsignal("p", Pins("E4")), Subsignal("n", Pins("B2"))),  # DDS_RESET/SYNC_DAT
+    ("eem", 0, Subsignal("n", Pins("J5")), Subsignal("p", Pins("G1"))),  # SCLK
+    ("eem", 1, Subsignal("n", Pins("K4")), Subsignal("p", Pins("M1"))),  # MOSI
+    ("eem", 2, Subsignal("n", Pins("K1")), Subsignal("p", Pins("K3"))),  # MISO/NU_CLK
+    ("eem", 3, Subsignal("n", Pins("J4")), Subsignal("p", Pins("H2"))),  # CS0
+    ("eem", 4, Subsignal("n", Pins("H4")), Subsignal("p", Pins("G2"))),  # CS1
+    ("eem", 5, Subsignal("n", Pins("G4")), Subsignal("p", Pins("E3"))),  # CS2/NU_CS
+    ("eem", 6, Subsignal("n", Pins("F4")), Subsignal("p", Pins("D2"))),  # IO_UPDATE
+    ("eem", 7, Subsignal("n", Pins("E4")), Subsignal("p", Pins("B2"))),  # DDS_RESET/SYNC_DAT
     # EEM 1
-    ("eem", 8, Subsignal("p", Pins("J3")), Subsignal("n", Pins("H1"))),  # SYNC_CLK/NU_MOSI0
-    ("eem", 9, Subsignal("p", Pins("L4")), Subsignal("n", Pins("L1"))),  # SYNC_IN/NU_MOSI1
-    ("eem", 10, Subsignal("p", Pins("J2")), Subsignal("n", Pins("J1"))), # IO_UPDATE_RET/NU_MOSI2
-    ("eem", 11, Subsignal("p", Pins("H3")), Subsignal("n", Pins("F2"))), # NU_MOSI3
-    ("eem", 12, Subsignal("p", Pins("H5")), Subsignal("n", Pins("E2"))), # SW0
-    ("eem", 13, Subsignal("p", Pins("G5")), Subsignal("n", Pins("D1"))), # SW1
-    ("eem", 14, Subsignal("p", Pins("C1")), Subsignal("n", Pins("C2"))), # SW2
-    ("eem", 15, Subsignal("p", Pins("F5")), Subsignal("n", Pins("B1"))), # SW3
+    ("eem", 8, Subsignal("n", Pins("J3")), Subsignal("p", Pins("H1"))),  # SYNC_CLK/NU_MOSI0
+    ("eem", 9, Subsignal("n", Pins("L4")), Subsignal("p", Pins("L1"))),  # SYNC_IN/NU_MOSI1
+    ("eem", 10, Subsignal("n", Pins("J2")), Subsignal("p", Pins("J1"))), # IO_UPDATE_RET/NU_MOSI2
+    ("eem", 11, Subsignal("n", Pins("H3")), Subsignal("p", Pins("F2"))), # NU_MOSI3
+    ("eem", 12, Subsignal("n", Pins("H5")), Subsignal("p", Pins("E2"))), # SW0
+    ("eem", 13, Subsignal("n", Pins("G5")), Subsignal("p", Pins("D1"))), # SW1
+    ("eem", 14, Subsignal("n", Pins("C1")), Subsignal("p", Pins("C2"))), # SW2
+    ("eem", 15, Subsignal("n", Pins("F5")), Subsignal("p", Pins("B1"))), # SW3
 ]
 
 
