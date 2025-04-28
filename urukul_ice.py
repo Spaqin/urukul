@@ -429,16 +429,21 @@ class Urukul(Module):
         io_update_ret = Signal()
         miso_en = Signal()
         io_update_ret_en = Signal()
+        # shared with MISO
+        nu_clk = Signal()
+        # shared with IO_UPDATE_RET
+        nu_mosi1 = Signal()
         # outputs
         self.specials += [
             # MISO
             Instance(
                 "SB_IO",
-                p_PIN_TYPE=C(0b100100, 6),  # output registered enabled
+                p_PIN_TYPE=C(0b100101, 6),  # output registered enabled, simple input
                 p_IO_STANDARD="SB_LVCMOS",
                 i_OUTPUT_CLK=ClockSignal("sck0"),
                 o_PACKAGE_PIN=eem[2].p,
                 i_D_OUT_0=miso_phy,
+                o_D_IN_0=nu_clk,
                 i_OUTPUT_ENABLE=miso_en),
             Instance(
                 "SB_IO",
@@ -451,17 +456,18 @@ class Urukul(Module):
             # IO_UPDATE_RET
             Instance(
                 "SB_IO",
-                p_PIN_TYPE=C(0b100100, 6),  # output registered enabled
+                p_PIN_TYPE=C(0b100101, 6),  # output registered enabled, simple input
                 p_IO_STANDARD="SB_LVCMOS",
-                i_OUTPUT_CLK=ClockSignal("sys"),
+                i_OUTPUT_CLK=ClockSignal("sck0"),
                 o_PACKAGE_PIN=eem[10].p,
                 i_D_OUT_0=io_update_ret,
+                o_D_IN_0=nu_mosi1,
                 i_OUTPUT_ENABLE=io_update_ret_en),
             Instance(
                 "SB_IO",
                 p_PIN_TYPE=C(0b111100, 6),  # output registered inverted enabled
                 p_IO_STANDARD="SB_LVCMOS",
-                i_OUTPUT_CLK=ClockSignal("sys"),
+                i_OUTPUT_CLK=ClockSignal("sck0"),
                 o_PACKAGE_PIN=eem[10].n,
                 i_D_OUT_0=io_update_ret,
                 i_OUTPUT_ENABLE=io_update_ret_en),
@@ -493,7 +499,7 @@ class Urukul(Module):
         sel = Signal(8)
         cs = Signal(3)
         miso = Signal(8)
-        mosi = eem[1].i
+        mosi = eem[1].p
 
         self.specials += [
             Instance("SB_DFFES", i_D=0, i_C=ClockSignal("sck1"), i_E=sel[2],
@@ -502,7 +508,7 @@ class Urukul(Module):
 
         self.comb += [
                 cfg.en_9910.eq(en_9910),
-                cs.eq(Cat(eem[3].i, eem[4].i, ~en_nu & eem[5].i)),
+                cs.eq(Cat(eem[3].p, eem[4].p, ~en_nu & eem[5].p)),
                 Array(sel)[cs].eq(1),  # one-hot
                 miso_phy.eq(Array(miso)[cs]),
                 miso[3].eq(miso[4]),  # for all-DDS take DDS0:MISO
@@ -526,12 +532,15 @@ class Urukul(Module):
         for i, ddsi in enumerate(dds):
             sel_spi = Signal()
             sel_nu = Signal()
+            if i == 2:
+                self.comb += [ddsi.sdi.eq(Mux(sel_nu, nu_mosi1, mosi))]
+            else:
+                self.comb += [ddsi.sdi.eq(Mux(sel_nu, eem[i + 8].p, mosi))]
             self.comb += [
                     sel_spi.eq(sel[i + 4] | (sel[3] & cfg.data.mask_nu[i])),
                     sel_nu.eq(en_nu & ~cfg.data.mask_nu[i]),
                     ddsi.cs_n.eq(~Mux(sel_nu, eem[5].p, sel_spi)),
-                    ddsi.sck.eq(Mux(sel_nu, miso_phy, self.cd_sck1.clk)),
-                    ddsi.sdi.eq(Mux(sel_nu, eem[i + 8].p, mosi)),
+                    ddsi.sck.eq(Mux(sel_nu, nu_clk, self.cd_sck1.clk)),
                     miso[i + 4].eq(ddsi.sdo),
                     ddsi.io_update.eq(Mux(cfg.data.mask_nu[i],
                         cfg.data.io_update, eem[6].p)),
