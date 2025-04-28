@@ -9,12 +9,12 @@ _io = [
     ("tp", 3, Pins("K16"), IOStandard("LVCMOS33")),
     ("tp", 4, Pins("K15"), IOStandard("LVCMOS33")),
     ("ifc_mode", 0, Pins("E16 D16 D15 C16"), IOStandard("LVCMOS33")),
+    # two more user switches marked SW2 on PCB
+    ("sw", 0, Pins("F15 F16"), IOStandard("LVCMOS33")),
     ("hw_rev", 0, Pins("R3 T2 R2 T1"), IOStandard("LVCMOS33")),
     # 10k low: AD9912, 0R high: AD9910
     ("variant", 0, Pins("T3"), IOStandard("LVCMOS33")),
-    # fail save LVDS enable, LVDS mode selection
-    # high: type 2 receiver, failsafe low
-    # ("fsen", 0, Pins(""), IOStandard("LVCMOS33")),  # Don't think this is on the new board
+    ("err", 0, Pins("L7"), IOStandard("LVCMOS25")),
     (
         "clk",
         0,
@@ -131,22 +131,24 @@ _io = [
         IOStandard("LVCMOS33"),
     ),
     # yosys/nextpnr get confused if these are not broken up
-    ("eem", 0, Subsignal("io", Pins("J5")), Subsignal("oe", Pins("G1"))),
-    ("eem", 1, Subsignal("io", Pins("K4")), Subsignal("oe", Pins("M1"))),
-    ("eem", 2, Subsignal("io", Pins("K1")), Subsignal("oe", Pins("K3"))),
-    ("eem", 3, Subsignal("io", Pins("J4")), Subsignal("oe", Pins("H2"))),
-    ("eem", 4, Subsignal("io", Pins("H4")), Subsignal("oe", Pins("G2"))),
-    ("eem", 5, Subsignal("io", Pins("G4")), Subsignal("oe", Pins("E3"))),
-    ("eem", 6, Subsignal("io", Pins("F4")), Subsignal("oe", Pins("D2"))),
-    ("eem", 7, Subsignal("io", Pins("E4")), Subsignal("oe", Pins("B2"))),
-    ("eem", 8, Subsignal("io", Pins("J3")), Subsignal("oe", Pins("H1"))),
-    ("eem", 9, Subsignal("io", Pins("L4")), Subsignal("oe", Pins("L1"))),
-    ("eem", 10, Subsignal("io", Pins("J2")), Subsignal("oe", Pins("J1"))),
-    ("eem", 11, Subsignal("io", Pins("H3")), Subsignal("oe", Pins("F2"))),
-    ("eem", 12, Subsignal("io", Pins("H5")), Subsignal("oe", Pins("E2"))),
-    ("eem", 13, Subsignal("io", Pins("G5")), Subsignal("oe", Pins("D1"))),
-    ("eem", 14, Subsignal("io", Pins("C1")), Subsignal("oe", Pins("C2"))),
-    ("eem", 15, Subsignal("io", Pins("F5")), Subsignal("oe", Pins("B1"))),
+    # EEM 0
+    ("eem", 0, Subsignal("p", Pins("J5")), Subsignal("n", Pins("G1"))),  # SCLK
+    ("eem", 1, Subsignal("p", Pins("K4")), Subsignal("n", Pins("M1"))),  # MOSI
+    ("eem", 2, Subsignal("p", Pins("K1")), Subsignal("n", Pins("K3"))),  # MISO/NU_CLK
+    ("eem", 3, Subsignal("p", Pins("J4")), Subsignal("n", Pins("H2"))),  # CS0
+    ("eem", 4, Subsignal("p", Pins("H4")), Subsignal("n", Pins("G2"))),  # CS1
+    ("eem", 5, Subsignal("p", Pins("G4")), Subsignal("n", Pins("E3"))),  # CS2/NU_CS
+    ("eem", 6, Subsignal("p", Pins("F4")), Subsignal("n", Pins("D2"))),  # IO_UPDATE
+    ("eem", 7, Subsignal("p", Pins("E4")), Subsignal("n", Pins("B2"))),  # DDS_RESET/SYNC_DAT
+    # EEM 1
+    ("eem", 8, Subsignal("p", Pins("J3")), Subsignal("n", Pins("H1"))),  # SYNC_CLK/NU_MOSI0
+    ("eem", 9, Subsignal("p", Pins("L4")), Subsignal("n", Pins("L1"))),  # SYNC_IN/NU_MOSI1
+    ("eem", 10, Subsignal("p", Pins("J2")), Subsignal("n", Pins("J1"))), # IO_UPDATE_RET/NU_MOSI2
+    ("eem", 11, Subsignal("p", Pins("H3")), Subsignal("n", Pins("F2"))), # NU_MOSI3
+    ("eem", 12, Subsignal("p", Pins("H5")), Subsignal("n", Pins("E2"))), # SW0
+    ("eem", 13, Subsignal("p", Pins("G5")), Subsignal("n", Pins("D1"))), # SW1
+    ("eem", 14, Subsignal("p", Pins("C1")), Subsignal("n", Pins("C2"))), # SW2
+    ("eem", 15, Subsignal("p", Pins("F5")), Subsignal("n", Pins("B1"))), # SW3
 ]
 
 

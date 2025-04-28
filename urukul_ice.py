@@ -2,7 +2,7 @@ from migen import *
 
 
 # increment this if the behavior (LEDs, registers, EEM pins) changes
-__proto_rev__ = 9
+__proto_rev__ = 8
 
 
 class SR(Module):
@@ -95,7 +95,6 @@ class CFG(Module):
     |           |       | 1: divide-by-one, 2: divider-by-two,            |
     |           |       | 3: divide-by-four                               |
     | ATT_EN    | 4     | Enable ATT (per channel)                        |
-    | DUMMY     | 1     | Unused, not usable, undefined                   |
     """
 
     def __init__(self, platform, n=4):
@@ -116,7 +115,6 @@ class CFG(Module):
                 ("clk_sel1", 1),
                 ("div", 2),
                 ("att_en", n),
-                ("dummy", 1),
             ]
         )
         dds_common = platform.lookup_request("dds_common")
@@ -139,8 +137,7 @@ class CFG(Module):
             sw = platform.request("eem", 12 + i)
             dds = platform.lookup_request("dds", i)
             self.comb += [
-                    sw.oe.eq(0),
-                    dds.rf_sw.eq(sw.io | self.data.rf_sw[i]),
+                    dds.rf_sw.eq(sw.p | self.data.rf_sw[i]),
                     dds.led[0].eq(dds.rf_sw),  # green
                     dds.led[1].eq(self.data.led[i] | (self.en_9910 & (
                         dds.smp_err | ~dds.pll_lock))),  # red
@@ -167,7 +164,6 @@ class Status(Module):
     | IFC_MODE  | 4     | IFC_MODE[0:3]                             |
     | PROTO_REV | 7     | Protocol revision (see __proto_rev__)     |
     | DROVER    | 4     | DDS.DROVER per channel                    |
-    | DUMMY     | 21    | Not used, not usable, undefined           |
     """
 
     def __init__(self, platform, n=4):
@@ -179,7 +175,6 @@ class Status(Module):
                 ("ifc_mode", 4),
                 ("proto_rev", 7),
                 ("drover", n),
-                ("dummy", 25),
             ]
         )
         self.comb += [
@@ -258,6 +253,8 @@ class Urukul(Module):
 
     On Urukul/v1.0, IFC_MODE[0] | IFC_MODE[3] drive EN_9910.
     On Urukul/v1.1, IFC_MODE[0] | VARIANT (board population) drive EN_9910.
+
+    On Urukul DIOT, second bank of DIP switches is unused.
 
     See :class:`Urukul`
 
@@ -404,10 +401,9 @@ class Urukul(Module):
         clk = platform.request("clk")
         dds_sync = platform.request("dds_sync")
         dds_common = platform.request("dds_common")
-        ifc_mode = platform.request("ifc_mode")
+        ifc_mode = platform.request("ifc_mode", 0)
         variant = platform.request("variant")
         att = platform.request("att")
-        # fsen = platform.request("fsen")
         dds = [platform.request("dds", i) for i in range(4)]
 
         ts_clk_div = TSTriple()
@@ -415,39 +411,73 @@ class Urukul(Module):
                 ts_clk_div.get_tristate(clk.div)
         ]
 
-        self.eem = eem = []
-        for i in range(12):
-            tsi = TSTriple()
-            eemi = platform.request("eem", i)
-            tsi._pin = eemi.io
-            self.specials += tsi.get_tristate(eemi.io)
-            self.comb += eemi.oe.eq(tsi.oe)
-            eem.append(tsi)
+        self.eem = eem = [platform.request("eem", i) for i in range(12)]
 
         # AD9910 only
         self.clock_domains.cd_sys = ClockDomain("sys", reset_less=True)
         self.clock_domains.cd_sck0 = ClockDomain("sck0", reset_less=True)
         self.clock_domains.cd_sck1 = ClockDomain("sck1", reset_less=True)
 
-        platform.add_period_constraint(eem[0]._pin, 8.)
-        platform.add_period_constraint(eem[2]._pin, 8.)
+        platform.add_period_constraint(eem[0].p, 8.)
+        platform.add_period_constraint(eem[2].p, 8.)
 
-        self.specials += Instance("SB_GB", i_USER_SIGNAL_TO_GLOBAL_BUFFER=eem[0].i, 
+        # SPI clock
+        self.specials += Instance("SB_GB", i_USER_SIGNAL_TO_GLOBAL_BUFFER=eem[0].p, 
                                   o_GLOBAL_BUFFER_OUTPUT=self.cd_sck1.clk)
+
+        miso_phy = Signal()
+        io_update_ret = Signal()
+        miso_en = Signal()
+        io_update_ret_en = Signal()
+        # outputs
+        self.specials += [
+            # MISO
+            Instance(
+                "SB_IO",
+                p_PIN_TYPE=C(0b100100, 6),  # output registered enabled
+                p_IO_STANDARD="SB_LVCMOS",
+                i_OUTPUT_CLK=ClockSignal("sck0"),
+                o_PACKAGE_PIN=eem[2].p,
+                i_D_OUT_0=miso_phy,
+                i_OUTPUT_ENABLE=miso_en),
+            Instance(
+                "SB_IO",
+                p_PIN_TYPE=C(0b111100, 6),  # output registered inverted enabled
+                p_IO_STANDARD="SB_LVCMOS",
+                i_OUTPUT_CLK=ClockSignal("sck0"),
+                o_PACKAGE_PIN=eem[2].n,
+                i_D_OUT_0=miso_phy,
+                i_OUTPUT_ENABLE=miso_en),
+            # IO_UPDATE_RET
+            Instance(
+                "SB_IO",
+                p_PIN_TYPE=C(0b100100, 6),  # output registered enabled
+                p_IO_STANDARD="SB_LVCMOS",
+                i_OUTPUT_CLK=ClockSignal("sys"),
+                o_PACKAGE_PIN=eem[10].p,
+                i_D_OUT_0=io_update_ret,
+                i_OUTPUT_ENABLE=io_update_ret_en),
+            Instance(
+                "SB_IO",
+                p_PIN_TYPE=C(0b111100, 6),  # output registered inverted enabled
+                p_IO_STANDARD="SB_LVCMOS",
+                i_OUTPUT_CLK=ClockSignal("sys"),
+                o_PACKAGE_PIN=eem[10].n,
+                i_D_OUT_0=io_update_ret,
+                i_OUTPUT_ENABLE=io_update_ret_en),
+        ]
 
         en_9910 = Signal()  # AD9910 populated (instead of AD9912)
         en_nu = Signal()  # NU-Servo operation with quad SPI
         en_eem1 = Signal()  # EEM1 connected and sync outputs used
 
         self.comb += [
-                # fsen.eq(1),
                 en_9910.eq(ifc_mode[0] | variant),
                 en_nu.eq(ifc_mode[1]),
                 en_eem1.eq(ifc_mode[2]),
-                [eem[i].oe.eq(0) for i in range(12) if i not in (2, 10)],
-                eem[2].oe.eq(~en_nu),
-                eem[10].oe.eq(~en_nu & en_eem1),
-                eem[10].o.eq(eem[6].i),
+                miso_en.eq(~en_nu),
+                io_update_ret_en.eq(~en_nu & en_eem1),
+                io_update_ret.eq(eem[6].p),
                 self.cd_sck0.clk.eq(~self.cd_sck1.clk),
                 dds_sync.clk_out_en.eq(~en_nu & en_eem1 & en_9910),
                 dds_sync.sync_out_en.eq(~en_nu & en_eem1 & en_9910),
@@ -474,7 +504,7 @@ class Urukul(Module):
                 cfg.en_9910.eq(en_9910),
                 cs.eq(Cat(eem[3].i, eem[4].i, ~en_nu & eem[5].i)),
                 Array(sel)[cs].eq(1),  # one-hot
-                eem[2].o.eq(Array(miso)[cs]),
+                miso_phy.eq(Array(miso)[cs]),
                 miso[3].eq(miso[4]),  # for all-DDS take DDS0:MISO
 
                 att.clk.eq(sel[2] & self.cd_sck1.clk),
@@ -499,13 +529,13 @@ class Urukul(Module):
             self.comb += [
                     sel_spi.eq(sel[i + 4] | (sel[3] & cfg.data.mask_nu[i])),
                     sel_nu.eq(en_nu & ~cfg.data.mask_nu[i]),
-                    ddsi.cs_n.eq(~Mux(sel_nu, eem[5].i, sel_spi)),
-                    ddsi.sck.eq(Mux(sel_nu, eem[2].i, self.cd_sck1.clk)),
-                    ddsi.sdi.eq(Mux(sel_nu, eem[i + 8].i, mosi)),
+                    ddsi.cs_n.eq(~Mux(sel_nu, eem[5].p, sel_spi)),
+                    ddsi.sck.eq(Mux(sel_nu, miso_phy, self.cd_sck1.clk)),
+                    ddsi.sdi.eq(Mux(sel_nu, eem[i + 8].p, mosi)),
                     miso[i + 4].eq(ddsi.sdo),
                     ddsi.io_update.eq(Mux(cfg.data.mask_nu[i],
-                        cfg.data.io_update, eem[6].i)),
-                    ddsi.reset.eq(cfg.data.rst | (~en_9910 & eem[7].i)),
+                        cfg.data.io_update, eem[6].p)),
+                    ddsi.reset.eq(cfg.data.rst | (~en_9910 & eem[7].p)),
             ]
 
         tp = [platform.request("tp", i) for i in range(5)]
