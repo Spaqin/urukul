@@ -8,7 +8,7 @@
 
 [NU-Servo](https://github.com/m-labs/nu-servo)
 
-## Building
+## Building (Xilinx)
 
 Needs [migen](https://github.com/m-labs/migen) and [Xilinx ISE](https://www.xilinx.com/products/design-tools/ise-design-suite.html). Assumes ISE is installed in ``/opt/Xilinx``.
 
@@ -16,7 +16,7 @@ Needs [migen](https://github.com/m-labs/migen) and [Xilinx ISE](https://www.xili
 make
 ```
 
-## Flashing
+## Flashing (Xilinx)
 
 With Digilent [JTAG HS2](https://store.digilentinc.com/jtag-hs2-programming-cable/) cable:
 
@@ -34,6 +34,38 @@ With Digilent [JTAG HS2](https://store.digilentinc.com/jtag-hs2-programming-cabl
   - ``flash_xc3.sh jtaghs2``
 
   - look for ``Verify: Success``
+
+## Building (Urukul DIOT, ICE40)
+
+Needs [migen](https://github.com/m-labs/migen), ``yosys``, ``nextpnr``, ``icestorm`` (available on Nix; todo: make a flake).
+
+With all these you can just call the python script:
+
+```
+python urukul_ice.py
+```
+
+## Flashing (Urukul DIOT, ICE40)
+
+Use [kasli-i2c](https://github.com/Spaqin/kasli-i2c/tree/flash_urukul) (may work after Urukul design is fixed).
+
+Otherwise you can also use an FT232H-based board. Connect the wires as follows. Top left is closest to the CPLD, right is facing the edge. Bottom is towards the end of the edge.
+
+```
+D4    D1
+D2    D0
+GND   X
+X     X
+D7    D6
+```
+
+Use ``iceprog`` (available with ``icestorm`` package):
+
+```
+iceprog build/urukul.bin
+```
+
+On development boards you may need to toggle the CRESET pin with kasli-i2c, then use FT232H to flash.
 
 # License
 
