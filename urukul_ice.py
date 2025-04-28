@@ -405,6 +405,7 @@ class Urukul(Module):
         variant = platform.request("variant")
         att = platform.request("att")
         dds = [platform.request("dds", i) for i in range(4)]
+        err_led = platform.request("err")
 
         ts_clk_div = TSTriple()
         self.specials += [
@@ -478,6 +479,7 @@ class Urukul(Module):
         en_eem1 = Signal()  # EEM1 connected and sync outputs used
 
         self.comb += [
+                err_led.eq(0),
                 en_9910.eq(ifc_mode[0] | variant),
                 en_nu.eq(ifc_mode[1]),
                 en_eem1.eq(ifc_mode[2]),
