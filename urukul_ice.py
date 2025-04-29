@@ -414,17 +414,14 @@ class Urukul(Module):
 
         self.eem = eem = [platform.request("eem", i) for i in range(12)]
 
-        # AD9910 only
-        self.clock_domains.cd_sys = ClockDomain("sys", reset_less=True)
+        # SPI clock
         self.clock_domains.cd_sck0 = ClockDomain("sck0", reset_less=True)
         self.clock_domains.cd_sck1 = ClockDomain("sck1", reset_less=True)
+        self.specials += Instance("SB_GB", i_USER_SIGNAL_TO_GLOBAL_BUFFER=eem[0].p, 
+                                  o_GLOBAL_BUFFER_OUTPUT=self.cd_sck1.clk)
 
         platform.add_period_constraint(eem[0].p, 8.)
         platform.add_period_constraint(eem[2].p, 8.)
-
-        # SPI clock
-        self.specials += Instance("SB_GB", i_USER_SIGNAL_TO_GLOBAL_BUFFER=eem[0].p, 
-                                  o_GLOBAL_BUFFER_OUTPUT=self.cd_sck1.clk)
 
         miso_phy = Signal()
         io_update_ret = Signal()
@@ -440,8 +437,8 @@ class Urukul(Module):
             Instance(
                 "SB_IO",
                 p_PIN_TYPE=C(0b100101, 6),  # output registered enabled, simple input
-                p_IO_STANDARD="SB_LVCMOS",
-                i_OUTPUT_CLK=ClockSignal("sck0"),
+                p_IO_STANDARD="SB_LVDS25",
+                i_OUTPUT_CLK=ClockSignal("sck1"),
                 o_PACKAGE_PIN=eem[2].p,
                 i_D_OUT_0=miso_phy,
                 o_D_IN_0=nu_clk,
@@ -449,8 +446,8 @@ class Urukul(Module):
             Instance(
                 "SB_IO",
                 p_PIN_TYPE=C(0b111100, 6),  # output registered inverted enabled
-                p_IO_STANDARD="SB_LVCMOS",
-                i_OUTPUT_CLK=ClockSignal("sck0"),
+                p_IO_STANDARD="SB_LVDS25",
+                i_OUTPUT_CLK=ClockSignal("sck1"),
                 o_PACKAGE_PIN=eem[2].n,
                 i_D_OUT_0=miso_phy,
                 i_OUTPUT_ENABLE=miso_en),
@@ -458,8 +455,8 @@ class Urukul(Module):
             Instance(
                 "SB_IO",
                 p_PIN_TYPE=C(0b100101, 6),  # output registered enabled, simple input
-                p_IO_STANDARD="SB_LVCMOS",
-                i_OUTPUT_CLK=ClockSignal("sck0"),
+                p_IO_STANDARD="SB_LVDS25",
+                i_OUTPUT_CLK=ClockSignal("sck1"),
                 o_PACKAGE_PIN=eem[10].p,
                 i_D_OUT_0=io_update_ret,
                 o_D_IN_0=nu_mosi1,
@@ -467,8 +464,8 @@ class Urukul(Module):
             Instance(
                 "SB_IO",
                 p_PIN_TYPE=C(0b111100, 6),  # output registered inverted enabled
-                p_IO_STANDARD="SB_LVCMOS",
-                i_OUTPUT_CLK=ClockSignal("sck0"),
+                p_IO_STANDARD="SB_LVDS25",
+                i_OUTPUT_CLK=ClockSignal("sck1"),
                 o_PACKAGE_PIN=eem[10].n,
                 i_D_OUT_0=io_update_ret,
                 i_OUTPUT_ENABLE=io_update_ret_en),
@@ -479,7 +476,7 @@ class Urukul(Module):
         en_eem1 = Signal()  # EEM1 connected and sync outputs used
 
         self.comb += [
-                err_led.eq(0),
+                err_led.eq(self.cd_sck1.clk),
                 en_9910.eq(ifc_mode[0] | variant),
                 en_nu.eq(ifc_mode[1]),
                 en_eem1.eq(ifc_mode[2]),
